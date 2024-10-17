@@ -1,5 +1,7 @@
+//@ DOM과 관련된 matcher는 존재하지 않기에, jest-dom을 추가로 설치하여 확장해서 사용
 import '@testing-library/jest-dom';
 
+//# 모킹한 모듈의 히스토리를 초기화(테스트의 독립성 보장)
 afterEach(() => {
   vi.clearAllMocks();
 });
