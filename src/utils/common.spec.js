@@ -35,3 +35,65 @@ describe('pick util 단위테스트', () => {
     expect(pick(obj)).toEqual({});
   });
 });
+
+//# spy 함수: 함수의 호출 여부를 확인하는 기능
+
+//# 테스트 코드는 비동기 타이머와 무관하게 동기적으로 실행
+//# -> 비동기 함수가 실행되기 전에 단언이 실행됨
+//# 타이머 모킹이 필요한 경우 vi.useFakeTimers() 함수를 사용
+describe('debounce util 단위테스트', () => {
+  //# 타이머 모킹 -> 0.3초 흐른 것으로 타이머 조작 -> spy 함수 호출 확인
+  beforeEach(() => {
+    //& teardown에서 모킹 초기화 -> 다른 테스트에 영향이 없어야 함.
+
+    //& 타이머 모킹도 초기화 필수!
+    //& 3rd party library, 전역의 teardown에서 타이머에 의존하는 로직 -> fakeTimer로 인해 제대로 동작하지 않을 수 있음.
+    vi.useFakeTimers();
+
+    //& 시간은 흐르기 때문에 매일 달라짐
+    //& -> 테스트 당시의 시간에 의존하는 테스트의 경우 시간을 고정하지 않는다면 테스트가 깨질 수 있다.
+    //& -> setSystemTime 함수를 사용해 시간을 고정하면 일관된 환경을 테스트 할 수 있다.
+    //# setSystemTime: 원하는 날짜를 객체 또는 값을 넣어 현재 시간을 정의할 수 있음.
+    vi.setSystemTime(new Date('2024-10-21'));
+  });
+
+  it('특정 시간이 지난 후 함수가 호출된다', () => {
+    const spy = vi.fn();
+
+    const debouncedFn = debounce(spy, 300);
+
+    debouncedFn();
+
+    vi.advanceTimersByTime(300);
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('특정 시간이 지나기 전에 연이어 호출되는 경우 마지막 호출 기준으로 지정된 타이머 시간이 지난 경우에만 함수가 호출된다.', () => {
+    const spy = vi.fn();
+
+    const debouncedFn = debounce(spy, 300);
+    //@ 최초 호출
+    debouncedFn();
+
+    //@ 최초 호출 후 0.2초 후 호출
+    vi.advanceTimersByTime(200);
+    debouncedFn();
+
+    //@ 두번째 호출 후 0.1초 후 호출
+    vi.advanceTimersByTime(100);
+    debouncedFn();
+
+    //@ 세번째 호출 후 0.2초 후 호출
+    vi.advanceTimersByTime(200);
+    debouncedFn();
+
+    //@ 네번째 호출 후 0.3초 후 호출
+    //@ 최초 함수 호출 후에 함수 호출 간격이 0.3초 이상 -> 다섯번째 호출이 유일
+    vi.advanceTimersByTime(300);
+    debouncedFn();
+
+    //@ 다섯 번을 호출했지만 실제 spy 함수는 단 한번만 호출
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
